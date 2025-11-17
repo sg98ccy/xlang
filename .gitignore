@@ -48,3 +48,4 @@ Thumbs.db
 # Project specific: Large generated Excel files
 # Keep this explicit so you do not accidentally ignore other folders
 src/notebook/output/
+.github/copilot-instructions.md
