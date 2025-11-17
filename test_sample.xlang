@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xworkbook>
+  <xsheet name="Sales">
+    <xrow r="1" c="A">
+      <xv>Product</xv>
+      <xv>Price</xv>
+      <xv>Quantity</xv>
+    </xrow>
+    <xrow r="2" c="A">
+      <xv>Widget</xv>
+      <xv>19.99</xv>
+      <xv>5</xv>
+    </xrow>
+    <xcell addr="D1" v="Total"/>
+    <xcell addr="D2" v="=B2*C2"/>
+  </xsheet>
+</xworkbook>

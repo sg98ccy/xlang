@@ -291,9 +291,138 @@ Current coverage: **97%+** across all core modules.
 
 ---
 
-## 8. Usage
+## 8. Command-Line Interface (CLI)
 
-### 8.1 Basic Python API
+EXLang provides a command-line tool for compiling and validating `.xlang` files without writing Python code.
+
+### 8.1 Installation
+
+After installing the package with `pip install -e .`, the `exlang` command becomes available:
+
+```bash
+exlang --version
+exlang --help
+```
+
+### 8.2 Compile Command
+
+Compile an EXLANG file to Excel format:
+
+```bash
+exlang compile input.xlang
+```
+
+This creates `input.xlsx` in the same directory.
+
+**Options:**
+
+- `-o, --output PATH`: Specify output path (default: replaces `.xlang` with `.xlsx`)
+- `-f, --force`: Overwrite output file if it already exists
+- `-v, --verbose`: Show detailed compilation progress
+
+**Examples:**
+
+```bash
+# Compile to default output (input.xlsx)
+exlang compile data.xlang
+
+# Specify custom output path
+exlang compile data.xlang -o output/report.xlsx
+
+# Overwrite existing file
+exlang compile data.xlang --force
+
+# Verbose mode
+exlang compile data.xlang --verbose
+```
+
+**Exit codes:**
+
+- `0`: Success
+- `1`: File not found
+- `2`: Output file already exists (use `--force` to overwrite)
+- `3`: Validation error in EXLANG syntax
+
+### 8.3 Validate Command
+
+Validate EXLANG files without compiling:
+
+```bash
+exlang validate input.xlang
+```
+
+**Options:**
+
+- `-f, --format FORMAT`: Output format (`text` or `json`, default: `text`)
+- `-v, --verbose`: Show detailed validation progress
+
+**Examples:**
+
+```bash
+# Validate single file
+exlang validate data.xlang
+
+# Validate multiple files
+exlang validate file1.xlang file2.xlang file3.xlang
+
+# JSON output (for integration with tools)
+exlang validate data.xlang --format json
+```
+
+**Exit codes:**
+
+- `0`: All files valid
+- `1`: One or more files invalid
+- `2`: File not found
+- `3`: Parse error (malformed XML)
+
+**JSON output format:**
+
+```json
+{
+  "results": [
+    {
+      "file": "data.xlang",
+      "valid": true,
+      "errors": []
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "valid": 1,
+    "invalid": 0
+  }
+}
+```
+
+### 8.4 Shell Integration
+
+The CLI can be used in shell scripts and build pipelines:
+
+```bash
+# Compile all EXLANG files in a directory
+for file in *.xlang; do
+  exlang compile "$file" -f
+done
+
+# Validate before compiling
+if exlang validate data.xlang; then
+  exlang compile data.xlang
+  echo "Successfully compiled data.xlsx"
+else
+  echo "Validation failed"
+  exit 1
+fi
+
+# Batch validation with JSON output
+exlang validate *.xlang --format json > validation_report.json
+```
+
+---
+
+## 9. Python API Usage
+
+### 9.1 Basic Python API
 
 The core entry point is `compile_xlang_to_xlsx`, which takes an EXLang string and an output path.
 
@@ -316,16 +445,36 @@ compile_xlang_to_xlsx(xlang_text, "output/kpi_example.xlsx")
 
 This generates an Excel workbook that you can open in Excel or any compatible viewer.
 
-### 8.2 Available imports
+### 9.2 Available imports
 
 ```python
 from exlang import compile_xlang_to_xlsx   # Main compiler
 from exlang import validate_xlang_minimal  # Validator
 from exlang import col_letter_to_index     # Helper: A → 1, B → 2, etc.
 from exlang import infer_value             # Helper: type inference
+from exlang import compile_file            # Compile .xlang file to .xlsx
+from exlang import validate_file           # Validate .xlang file
+from exlang import read_xlang_file         # Read .xlang file content
 ```
 
-### 8.3 Running the demonstration notebook
+### 9.3 File-based API
+
+For working with `.xlang` files directly:
+
+```python
+from exlang import compile_file, validate_file
+
+# Compile a file
+compile_file("input.xlang", "output.xlsx")
+
+# Validate a file
+is_valid, errors = validate_file("input.xlang")
+if not is_valid:
+    for error in errors:
+        print(error)
+```
+
+### 9.4 Running the demonstration notebook
 
 The repository provides a Jupyter Notebook (`notebook/main.ipynb`) that:
 

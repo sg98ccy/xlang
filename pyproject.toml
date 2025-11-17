@@ -4,10 +4,13 @@ version = "0.1.0"
 description = "A concise domain language for Excel generation"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["openpyxl"]
+dependencies = ["openpyxl", "click>=8.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-cov>=4.0"]
+
+[project.scripts]
+exlang = "exlang.cli:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]
