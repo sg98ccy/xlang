@@ -1,4 +1,4 @@
-# XLang v1 — A Concise Domain Language for Excel Generation  
+# EXLang v1 — A Concise Domain Language for Excel Generation  
 Version: 1.0 (Preview)  
 Last Updated: 2025-11-17  
 
@@ -6,15 +6,15 @@ Last Updated: 2025-11-17
 
 ## 1. Introduction
 
-XLang v1 is a compact, structured markup language designed to allow Large Language Models (LLMs) to generate Excel workbooks directly, without relying on verbose and brittle Python tool calls.
+EXLang v1 is a compact, structured markup language designed to allow Large Language Models (LLMs) to generate Excel workbooks directly, without relying on verbose and brittle Python tool calls.
 
-The purpose of XLang is to provide a middle ground between:
+The purpose of EXLang is to provide a middle ground between:
 
 - Full Python code using libraries such as openpyxl, which is expressive but long  
 - Raw Excel XML, which is precise but extremely verbose  
 - Natural language descriptions, which are easy to write but structurally ambiguous  
 
-XLang combines structural clarity with concise syntax, making it suitable for:
+EXLang combines structural clarity with concise syntax, making it suitable for:
 
 - LLM output optimisation  
 - Automated Excel report generation  
@@ -23,9 +23,9 @@ XLang combines structural clarity with concise syntax, making it suitable for:
 
 This repository contains:
 
-1. A reference implementation of the XLang v1 compiler in Python  
-2. Validation logic for core XLang tags  
-3. Example XLang documents and their corresponding outputs  
+1. A reference implementation of the EXLang v1 compiler in Python  
+2. Validation logic for core EXLang tagss  
+3. Example EXLang documents and their corresponding outputs  
 4. Notebook examples demonstrating the full workflow  
 
 ---
@@ -41,16 +41,16 @@ Typical LLM to Excel workflows require:
 3. The environment to return the resulting file  
 
 This is expensive in tokens and fragile across model versions.  
-XLang directly expresses workbook structure in a concise, declarative format.
+EXLang directly expresses workbook structure in a concise, declarative format.
 
 ### 2.2 Provide deterministic, machine readable outputs
 
 LLMs are significantly more reliable when instructed to output structured tags.  
-XLang leverages this behaviour to produce stable workbook definitions.
+EXLang leverages this behaviour to produce stable workbook definitions.
 
 ### 2.3 Establish a foundation for future high level constructs
 
-XLang v1 introduces the core data model.  
+EXLang v1 introduces the core data model.  
 Future versions will add, for example:
 
 - `xmerge` for merged cells  
@@ -67,7 +67,7 @@ These higher level constructs are intended to achieve stronger compression and b
 
 ### 3.1 Workbook structure
 
-XLang adopts a simple hierarchical model:
+EXLang adopts a simple hierarchical model:
 
 - `<xworkbook>`  
   - `<xsheet>`  
@@ -90,7 +90,7 @@ Type hints (for example `t="number"` or `t="string"`) allow you to override auto
 
 ### 3.3 Deterministic rendering
 
-Every valid XLang document produces a deterministic Excel file.
+Every valid EXLang document produces a deterministic Excel file.
 
 The compiler performs validation before generation and rejects invalid structures, which helps prevent subtle runtime issues and makes the output suitable for automated pipelines.
 
@@ -98,7 +98,7 @@ The compiler performs validation before generation and rejects invalid structure
 
 ## 4. Supported Tags in Version 1
 
-XLang v1 intentionally focuses on a small, coherent subset of tags that already cover many realistic spreadsheets.
+EXLang v1 intentionally focuses on a small, coherent subset of tags that already cover many realistic spreadsheets.
 
 ### 4.1 `<xworkbook>`
 
@@ -146,7 +146,7 @@ Example:
 ### 4.4 `<xv>...</xv>`
 
 Represents a cell value within a row.  
-The text content is interpreted using XLang’s type inference:
+The text content is interpreted using EXLang's type inference:
 
 - If it begins with `=`, it is treated as a formula  
 - Otherwise, it may become a number, boolean or string depending on its content  
@@ -204,7 +204,7 @@ cd xlang
 
 ### 6.1 Basic Python API
 
-The core entry point is `compile_xlang_to_xlsx`, which takes an XLang string and an output path.
+The core entry point is `compile_xlang_to_xlsx`, which takes an EXLang string and an output path.
 
 Example usage:
 
@@ -223,7 +223,7 @@ This generates an Excel workbook that you can open in Excel or any compatible vi
 
 The repository provides a Jupyter Notebook that:
 
-- Introduces the XLang syntax  
+- Introduces the EXLang syntax  
 - Walks through the compiler implementation step by step  
 - Shows how validation and type inference work  
 - Includes multiple examples with programmatic verification  
@@ -248,7 +248,7 @@ This example defines a single sheet with:
 - Two region rows  
 - A total row with a SUM formula  
 
-XLang:
+EXLang:
 
 ```xml
 <xworkbook>
@@ -293,9 +293,9 @@ Together, these examples cover a wide range of behaviours for the basic tag set.
 
 ### 8.1 Compression experiment
 
-To quantify how concise XLang is compared to traditional Python, we implemented the same workbooks in:
+To quantify how concise EXLang is compared to traditional Python, we implemented the same workbooks in:
 
-1. XLang v1 syntax  
+1. EXLang v1 syntax  
 2. Direct Python using `openpyxl`  
 
 We then compared character lengths as an approximate proxy for token counts.
@@ -316,16 +316,16 @@ Results:
 
 The results indicate:
 
-- XLang is more concise than Python code in multi row and multi sheet tabular content (as in Example 2), where regular structure aligns with XLang’s row based model  
-- Python becomes more concise in irregular or override heavy cases (as in Example 3), where XLang v1 relies on repeated `xcell` assignments and loses its structural advantage  
+- EXLang is more concise than Python code in multi row and multi sheet tabular content (as in Example 2), where regular structure aligns with EXLang's row based model  
+- Python becomes more concise in irregular or override heavy cases (as in Example 3), where EXLang v1 relies on repeated `xcell` assignments and loses its structural advantage
 
 This aligns with the design goal:
 
-- XLang v1 already yields shorter, structured representations for many realistic reporting scenarios involving predictable tabular layouts  
+- EXLang v1 already yields shorter, structured representations for many realistic reporting scenarios involving predictable tabular layouts  
 - Compression weakens when structural irregularity dominates, which is expected at this early stage of the language  
-- Future features such as ranges, repetition constructs, sequence placement and templates are expected to improve compression in irregular cases and recover XLang’s advantage  
+- Future features such as ranges, repetition constructs, sequence placement and templates are expected to improve compression in irregular cases and recover EXLang's advantage  
 
-These observations support the viability of XLang as a practical structured output language for LLM based Excel generation and as a meaningful testbed for research on Output Representation Optimisation.
+These observations support the viability of EXLang as a practical structured output language for LLM based Excel generation and as a meaningful testbed for research on Output Representation Optimisation.
 
 ---
 
@@ -365,7 +365,7 @@ Please follow these guidelines:
 2. When adding new tags or behaviours, ensure:
    - Compiler changes  
    - Validation logic  
-   - At least one example XLang file  
+   - At least one example EXLang file  
    - Basic tests or notebook verification cells  
 3. Update this README and any reference documentation to describe the new features.  
 
@@ -384,4 +384,4 @@ See the `LICENSE` file in the repository for full terms.
 
 For bug reports or feature requests, please open an issue on GitHub.
 
-For collaboration or research discussions related to Output Representation Optimisation and XLang, please contact the project owner through the channels listed on the repository profile.
+For collaboration or research discussions related to Output Representation Optimisation and EXLang, please contact the project owner through the channels listed on the repository profile.
