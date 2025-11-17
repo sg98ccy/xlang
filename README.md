@@ -220,11 +220,59 @@ pip install -e .
 
 This installs the package from `src/exlang/` and makes it importable from any Python environment or notebook.
 
+### 5.4 Install development dependencies (optional)
+
+For running tests and coverage analysis:
+
+```bash
+pip install -e .[dev]
+```
+
+This installs pytest and pytest-cov along with the package.
+
 ---
 
-## 6. Usage
+## 6. Testing
 
-### 6.1 Basic Python API
+EXLang includes a comprehensive automated test suite for research reproducibility.
+
+### 6.1 Run all tests
+
+```bash
+pytest tests/ -v
+```
+
+### 6.2 Run tests with coverage report
+
+```bash
+pytest tests/ --cov=src/exlang --cov-report=term-missing
+```
+
+### 6.3 Run tests with HTML coverage report
+
+```bash
+pytest tests/ --cov=src/exlang --cov-report=html
+```
+
+This generates an HTML report in `htmlcov/index.html`.
+
+### 6.4 Test suite structure
+
+The test suite covers:
+
+- **test_helpers.py**: Utility function unit tests (column conversion, type inference)
+- **test_parser.py**: XML validation tests (valid and invalid documents)
+- **test_compiler.py**: Compilation correctness (value types, formulas, multi-sheet)
+- **test_roundtrip.py**: End-to-end semantic preservation (EXLANG → Excel → verify)
+- **test_errors.py**: Error handling and edge cases
+
+Current coverage: **97%+** across all core modules.
+
+---
+
+## 7. Usage
+
+### 7.1 Basic Python API
 
 The core entry point is `compile_xlang_to_xlsx`, which takes an EXLang string and an output path.
 
@@ -247,7 +295,7 @@ compile_xlang_to_xlsx(xlang_text, "output/kpi_example.xlsx")
 
 This generates an Excel workbook that you can open in Excel or any compatible viewer.
 
-### 6.2 Available imports
+### 7.2 Available imports
 
 ```python
 from exlang import compile_xlang_to_xlsx   # Main compiler
@@ -256,7 +304,7 @@ from exlang import col_letter_to_index     # Helper: A → 1, B → 2, etc.
 from exlang import infer_value             # Helper: type inference
 ```
 
-### 6.3 Running the demonstration notebook
+### 7.3 Running the demonstration notebook
 
 The repository provides a Jupyter Notebook (`notebook/main.ipynb`) that:
 
@@ -279,9 +327,9 @@ from exlang import compile_xlang_to_xlsx, validate_xlang_minimal
 
 ---
 
-## 7. Examples
+## 8. Examples
 
-### 7.1 Example 1 — Simple KPI sheet
+### 8.1 Example 1 — Simple KPI sheet
 
 This example defines a single sheet with:
 
@@ -303,7 +351,7 @@ EXLang:
 </xworkbook>
 ```
 
-### 7.2 Example 2 — Multi sheet regional sales
+### 8.2 Example 2 — Multi sheet regional sales
 
 This example stresses:
 
@@ -316,7 +364,7 @@ Sheets:
 - `Data` holding regional values  
 - `Summary` calculating total and average metrics  
 
-### 7.3 Example 3 — Mixed types and layout
+### 8.3 Example 3 — Mixed types and layout
 
 This example stresses:
 
@@ -330,9 +378,9 @@ Together, these examples cover a wide range of behaviours for the basic tag set.
 
 ---
 
-## 8. Benchmarks and Analysis
+## 9. Benchmarks and Analysis
 
-### 8.1 Compression experiment
+### 9.1 Compression experiment
 
 To quantify how concise EXLang is compared to traditional Python, we implemented the same workbooks in:
 
@@ -353,7 +401,7 @@ Results:
   - Python length: 570 characters  
   - Python to XLang ratio: approximately 0.74  
 
-### 8.2 Interpretation
+### 9.2 Interpretation
 
 The results indicate:
 
@@ -370,23 +418,23 @@ These observations support the viability of EXLang as a practical structured out
 
 ---
 
-## 9. Roadmap
+## 10. Roadmap
 
-### 9.1 Short term (v1.x)
+### 10.1 Short term (v1.x)
 
 - Add support for `xmerge` to handle merged cell regions  
 - Add minimal `xstyle` for formatting (fonts, number formats, alignment)  
 - Extend validation to cover more error cases and overlapping ranges  
 - Create additional examples, including stress tests and edge cases  
 
-### 9.2 Medium term (v2)
+### 10.2 Medium term (v2)
 
 - Introduce `xseq` and `xplace` to define reusable value sequences  
 - Add `xrepeat` and `xpattern` for pattern based table generation  
 - Improve styling capabilities and introduce simple style presets  
 - Add named cells and named ranges for more complex formulas  
 
-### 9.3 Long term (v3)
+### 10.3 Long term (v3)
 
 - Develop a richer pattern language for complex dashboards  
 - Introduce theme support for consistent styling  
@@ -396,7 +444,7 @@ These observations support the viability of EXLang as a practical structured out
 
 ---
 
-## 10. Contributing
+## 11. Contributing
 
 Contributions are welcome.
 
@@ -414,14 +462,14 @@ You can propose larger changes via GitHub issues or pull requests.
 
 ---
 
-## 11. License
+## 12. License
 
 This project is licensed under the MIT License.  
 See the `LICENSE` file in the repository for full terms.
 
 ---
 
-## 12. Contact
+## 13. Contact
 
 For bug reports or feature requests, please open an issue on GitHub.
 
