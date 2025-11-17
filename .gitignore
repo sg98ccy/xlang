@@ -45,8 +45,7 @@ dist/
 Thumbs.db
 
 # ----------------------------------------------------------------------
-# Project specific: Large generated Excel files
-# Keep this explicit so you do not accidentally ignore other folders
+# Project specific: Large generated Excel files, custom instructions etc.
 output/
 notebook/output/
 .github/copilot-instructions.md

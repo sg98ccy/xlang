@@ -24,9 +24,27 @@ EXLang combines structural clarity with concise syntax, making it suitable for:
 This repository contains:
 
 1. A reference implementation of the EXLang v1 compiler in Python  
-2. Validation logic for core EXLang tagss  
+2. Validation logic for core EXLang tags  
 3. Example EXLang documents and their corresponding outputs  
 4. Notebook examples demonstrating the full workflow  
+
+### Project Structure
+
+```
+exlang/
+├── src/exlang/          # Single source of truth (Python package)
+│   ├── __init__.py      # Public API exports
+│   ├── compiler.py      # compile_xlang_to_xlsx()
+│   ├── validator.py     # validate_xlang_minimal()
+│   └── helpers.py       # col_letter_to_index(), infer_value()
+├── notebook/
+│   └── main.ipynb       # Interactive demonstrations
+├── output/              # Generated Excel files
+├── pyproject.toml       # Package definition
+└── README.md
+```
+
+**Design principle**: `src/exlang/` contains the implementation with separated concerns (compiler, validator, helpers). The notebook imports from this package for interactive exploration and testing.  
 
 ---
 
@@ -185,18 +203,22 @@ Type hints allow you to enforce interpretations such as preserving leading zeros
 - Python 3.10 or later  
 - `openpyxl` for Excel file generation  
 
-### 5.2 Install dependencies
+### 5.2 Clone the repository
 
 ```bash
-pip install openpyxl
+git clone https://github.com/sg98ccy/exlang
+cd exlang
 ```
 
-### 5.3 Clone the repository
+### 5.3 Install the package
+
+Install in editable mode to make the `exlang` package available:
 
 ```bash
-git clone https://github.com/sg98ccy/xlang
-cd xlang
+pip install -e .
 ```
+
+This installs the package from `src/exlang/` and makes it importable from any Python environment or notebook.
 
 ---
 
@@ -209,32 +231,51 @@ The core entry point is `compile_xlang_to_xlsx`, which takes an EXLang string an
 Example usage:
 
 ```python
-from xlang import compile_xlang_to_xlsx
+from exlang import compile_xlang_to_xlsx
 
-with open("examples/kpi_example.xlang", "r", encoding="utf8") as f:
-    xlang_text = f.read()
+xlang_text = """
+<xworkbook>
+  <xsheet name="KPI">
+    <xrow r="1"><xv>Region</xv><xv>Sales</xv></xrow>
+    <xrow r="2"><xv>North</xv><xv>120000</xv></xrow>
+  </xsheet>
+</xworkbook>
+""".strip()
 
 compile_xlang_to_xlsx(xlang_text, "output/kpi_example.xlsx")
 ```
 
 This generates an Excel workbook that you can open in Excel or any compatible viewer.
 
-### 6.2 Running the demonstration notebook
+### 6.2 Available imports
 
-The repository provides a Jupyter Notebook that:
+```python
+from exlang import compile_xlang_to_xlsx   # Main compiler
+from exlang import validate_xlang_minimal  # Validator
+from exlang import col_letter_to_index     # Helper: A → 1, B → 2, etc.
+from exlang import infer_value             # Helper: type inference
+```
+
+### 6.3 Running the demonstration notebook
+
+The repository provides a Jupyter Notebook (`notebook/main.ipynb`) that:
 
 - Introduces the EXLang syntax  
-- Walks through the compiler implementation step by step  
+- Demonstrates importing and using the `exlang` package  
 - Shows how validation and type inference work  
 - Includes multiple examples with programmatic verification  
 
-You can open it using:
+After installing the package with `pip install -e .`, you can open the notebook:
 
 ```bash
-jupyter lab
+jupyter lab notebook/main.ipynb
 ```
 
-Then navigate to the notebook file in the project.
+The notebook imports directly from the installed package:
+
+```python
+from exlang import compile_xlang_to_xlsx, validate_xlang_minimal
+```
 
 ---
 
