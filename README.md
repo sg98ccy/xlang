@@ -215,6 +215,49 @@ Example:
 
 Type hints allow you to enforce interpretations such as preserving leading zeros or enforcing booleans.
 
+### 5.6 `<xrange from="..." to="..." fill="..." t="...">`
+
+Fill a rectangular range of cells with the same value.  
+Attributes:
+
+- `from`: top-left cell address in A1 notation (required)  
+- `to`: bottom-right cell address in A1 notation (required)  
+- `fill`: value to place in all cells (required)  
+- `t`: optional type hint (`string`, `number`, `bool`, `date`)  
+
+Example:
+
+```xml
+<xrange from="B2" to="B50" fill="0"/>
+```
+
+This fills cells B2 through B50 (inclusive) with the integer value 0.
+
+**Range behaviour:**
+
+- Both `from` and `to` are inclusive
+- `from` must be before or equal to `to` (both row and column)
+- Single-cell ranges (`from = to`) are valid
+- Type inference applies to the `fill` value
+- Can be used to initialise large areas efficiently (reduces token count)
+
+**Compression benefits:**
+
+Traditional approach using `<xcell>` for 50 cells:
+```xml
+<xcell addr="B2" v="0"/>
+<xcell addr="B3" v="0"/>
+<!-- ... 46 more lines ... -->
+<xcell addr="B50" v="0"/>
+```
+
+Equivalent using `<xrange>` (single line):
+```xml
+<xrange from="B2" to="B50" fill="0"/>
+```
+
+This achieves approximately 50× token reduction for sparse/irregular layouts.
+
 ---
 
 ## 6. Installation

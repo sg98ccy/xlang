@@ -16,6 +16,7 @@ def validate_xlang_minimal(root: ET.Element) -> list[str]:
       - xsheet has name
       - xrow has r
       - xcell has addr and v
+      - xrange has from, to, and fill
       - Optional t attributes use only allowed type names
     """
     errors: list[str] = []
@@ -41,6 +42,20 @@ def validate_xlang_minimal(root: ET.Element) -> list[str]:
             if t is not None and t not in ALLOWED_TYPES:
                 errors.append(
                     f"xcell at {xcell.attrib.get('addr', '?')} "
+                    f"has invalid type hint t='{t}'"
+                )
+
+        for xrange in sheet.findall("xrange"):
+            if "from" not in xrange.attrib:
+                errors.append("xrange missing required attribute 'from'")
+            if "to" not in xrange.attrib:
+                errors.append("xrange missing required attribute 'to'")
+            if "fill" not in xrange.attrib:
+                errors.append("xrange missing required attribute 'fill'")
+            t = xrange.attrib.get("t")
+            if t is not None and t not in ALLOWED_TYPES:
+                errors.append(
+                    f"xrange from {xrange.attrib.get('from', '?')} to {xrange.attrib.get('to', '?')} "
                     f"has invalid type hint t='{t}'"
                 )
 

@@ -8,7 +8,7 @@ from xml.etree import ElementTree as ET
 from openpyxl import Workbook
 
 from .validator import validate_xlang_minimal
-from .helpers import col_letter_to_index, infer_value
+from .helpers import col_letter_to_index, infer_value, parse_range
 
 
 def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path) -> None:
@@ -21,6 +21,7 @@ def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path) -> None:
       - xrow
       - xv
       - xcell
+      - xrange
     """
     root = ET.fromstring(xlang_text)
 
@@ -36,6 +37,7 @@ def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path) -> None:
         sheet_name = xsheet.attrib["name"]
         ws = wb.create_sheet(title=sheet_name)
 
+        # Process in order: xrow → xrange → xcell (last write wins)
         for xrow in xsheet.findall("xrow"):
             row_idx = int(xrow.attrib["r"])
             start_col_letter = xrow.attrib.get("c", "A")
@@ -49,6 +51,19 @@ def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path) -> None:
                     column=start_col_idx + offset,
                     value=value,
                 )
+
+        for xrange in xsheet.findall("xrange"):
+            from_addr = xrange.attrib["from"]
+            to_addr = xrange.attrib["to"]
+            fill_value = xrange.attrib["fill"]
+            type_hint = xrange.attrib.get("t")
+            
+            from_row, from_col, to_row, to_col = parse_range(from_addr, to_addr)
+            inferred_value = infer_value(fill_value, type_hint)
+            
+            for row in range(from_row, to_row + 1):
+                for col in range(from_col, to_col + 1):
+                    ws.cell(row=row, column=col, value=inferred_value)
 
         for xcell in xsheet.findall("xcell"):
             addr = xcell.attrib["addr"]

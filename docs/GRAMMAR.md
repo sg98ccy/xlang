@@ -108,7 +108,7 @@ EXLang is an XML-based language. All documents must:
 All EXLang tags use lowercase with `x` prefix:
 
 ```
-xworkbook  xsheet  xrow  xv  xcell
+xworkbook  xsheet  xrow  xv  xcell  xrange
 ```
 
 **Rationale**: The `x` prefix prevents collision with potential future XML namespaces and clearly identifies EXLang-specific elements.
@@ -158,7 +158,7 @@ Sheet         ::= '<xsheet' SheetName '>' SheetContent* '</xsheet>'
 
 SheetName     ::= 'name="' Identifier '"'
 
-SheetContent  ::= Row | Cell
+SheetContent  ::= Row | Cell | Range
 
 (* Sheet may be empty (no content) *)
 ```
@@ -197,7 +197,25 @@ TypeHint      ::= 't="' TypeName '"'
 (* Type hint is optional; if absent, type is inferred *)
 ```
 
-### 4.5 Terminal Definitions
+### 4.5 Range Fill
+
+```ebnf
+(* ============================================================ *)
+(* Range fill for rectangular cell areas                        *)
+(* ============================================================ *)
+
+Range         ::= '<xrange' FromAddr ToAddr FillValue [ TypeHint ] '/>'
+
+FromAddr      ::= 'from="' CellAddress '"'
+ToAddr        ::= 'to="' CellAddress '"'
+FillValue     ::= 'fill="' TextContent '"'
+
+(* Fills all cells in rectangular range [from, to] with fill value *)
+(* from must be ≤ to (both row and column) *)
+(* Type hint applies to fill value inference *)
+```
+
+### 4.6 Terminal Definitions
 
 ```ebnf
 (* ============================================================ *)
@@ -226,17 +244,18 @@ XMLChar       ::= <any Unicode character except XML special chars>
                   (* Must escape: < > & " ' *)
 ```
 
-### 4.6 Grammar Summary
+### 4.7 Grammar Summary
 
 Complete grammar in condensed form:
 
 ```ebnf
 Document      ::= XMLDecl? Workbook
 Workbook      ::= '<xworkbook>' Sheet+ '</xworkbook>'
-Sheet         ::= '<xsheet' 'name="' Identifier '"' '>' ( Row | Cell )* '</xsheet>'
+Sheet         ::= '<xsheet' 'name="' Identifier '"' '>' ( Row | Cell | Range )* '</xsheet>'
 Row           ::= '<xrow' 'r="' PositiveInt '"' [ 'c="' ColumnLetter '"' ] '>' Value+ '</xrow>'
 Value         ::= '<xv>' TextContent '</xv>'
 Cell          ::= '<xcell' 'addr="' CellAddress '"' 'v="' TextContent '"' [ 't="' TypeName '"' ] '/>'
+Range         ::= '<xrange' 'from="' CellAddress '"' 'to="' CellAddress '"' 'fill="' TextContent '"' [ 't="' TypeName '"' ] '/>'
 
 Identifier    ::= [A-Za-z0-9_-]+
 PositiveInt   ::= [1-9][0-9]*
@@ -375,31 +394,64 @@ EXLang performs **no implicit type coercion** during compilation. Type inference
 
 **Rule 6.4.4**: Direct cell placement overrides row-based placement at the same address.
 
-### 6.5 Overlap Resolution
+### 6.5 Range Fill Semantics
 
-**Rule 6.5.1**: If multiple elements write to the same cell, **last write wins**.
+**Rule 6.5.1**: `<xrange>` fills all cells in a rectangular area with the same value.
 
-**Rule 6.5.2**: Processing order within a sheet:
+**Rule 6.5.2**: The `from` attribute specifies the top-left cell (starting cell).
+
+**Rule 6.5.3**: The `to` attribute specifies the bottom-right cell (ending cell).
+
+**Rule 6.5.4**: The `fill` attribute contains the value to place in all cells.
+
+**Rule 6.5.5**: Range bounds are inclusive: both `from` and `to` cells are filled.
+
+**Rule 6.5.6**: `from` must be before or equal to `to` (both row and column).
+
+**Example:**
+```xml
+<xrange from="B2" to="D4" fill="0"/>
+<!-- Fills 3×3 grid: B2, B3, B4, C2, C3, C4, D2, D3, D4 all = 0 -->
+```
+
+**Rule 6.5.7**: Type inference applies to the `fill` value:
+- Numeric strings become integers or floats
+- Formulas (starting with `=`) remain as formulas
+- Type hint `t` overrides inference
+
+**Rule 6.5.8**: Single-cell ranges (`from = to`) are valid.
+
+###  6.6 Overlap Resolution
+
+**Rule 6.6.1**: If multiple elements write to the same cell, **last write wins**.
+
+**Rule 6.6.2**: Processing order within a sheet:
 1. All `<xrow>` elements (in document order)
-2. All `<xcell>` elements (in document order)
+2. All `<xrange>` elements (in document order)
+3. All `<xcell>` elements (in document order)
 
 **Example:**
 ```xml
 <xsheet name="Test">
-  <xrow r="1"><xv>Original</xv></xrow>  <!-- A1 = "Original" -->
-  <xcell addr="A1" v="Override"/>       <!-- A1 = "Override" (final) -->
+  <xrow r="1"><xv>Original</xv></xrow>      <!-- A1 = "Original" -->
+  <xrange from="A1" to="A3" fill="Range"/>  <!-- A1 = "Range" (overwrites) -->
+  <xcell addr="A1" v="Override"/>           <!-- A1 = "Override" (final) -->
 </xsheet>
 ```
 
-### 6.6 Formula Semantics
+**Rule 6.6.3**: `<xrange>` can overwrite row-based placement.
 
-**Rule 6.6.1**: Values starting with `=` are treated as Excel formulas.
+**Rule 6.6.4**: `<xcell>` can overwrite range fills.
 
-**Rule 6.6.2**: Formulas are **stored**, not evaluated during compilation.
+### 6.7 Formula Semantics
 
-**Rule 6.6.3**: Formula syntax must be valid Excel formula notation.
+**Rule 6.7.1**: Values starting with `=` are treated as Excel formulas.
 
-**Rule 6.6.4**: Cross-sheet references use `SheetName!CellAddress` syntax:
+**Rule 6.7.2**: Formulas are **stored**, not evaluated during compilation.
+
+**Rule 6.7.3**: Formula syntax must be valid Excel formula notation.
+
+**Rule 6.7.4**: Cross-sheet references use `SheetName!CellAddress` syntax:
 ```xml
 <xcell addr="A1" v="=Data!B2+Summary!C5"/>
 ```
@@ -415,20 +467,29 @@ EXLang performs **no implicit type coercion** during compilation. Type inference
 **V3**: `<xsheet>` must have `name` attribute  
 **V4**: `<xrow>` must have `r` attribute  
 **V5**: `<xcell>` must have `addr` and `v` attributes  
+**V6**: `<xrange>` must have `from`, `to`, and `fill` attributes  
 
 ### 7.2 Attribute Validation
 
-**V6**: `name` must be non-empty string  
-**V7**: `r` must be positive integer (≥ 1)  
-**V8**: `c` must match pattern `[A-Z]+`  
-**V9**: `addr` must match pattern `[A-Z]+[1-9][0-9]*`  
-**V10**: `t` (if present) must be one of: `string`, `number`, `bool`, `date`  
+**V7**: `name` must be non-empty string  
+**V8**: `r` must be positive integer (≥ 1)  
+**V9**: `c` must match pattern `[A-Z]+`  
+**V10**: `addr` must match pattern `[A-Z]+[1-9][0-9]*`  
+**V11**: `from` must match pattern `[A-Z]+[1-9][0-9]*`  
+**V12**: `to` must match pattern `[A-Z]+[1-9][0-9]*`  
+**V13**: `t` (if present) must be one of: `string`, `number`, `bool`, `date`  
 
 ### 7.3 Type Validation
 
-**V11**: Type hint must be from allowed set  
-**V12**: Formula values (starting with `=`) ignore type hints  
-**V13**: Invalid type hint values are rejected before compilation  
+**V14**: Type hint must be from allowed set  
+**V15**: Formula values (starting with `=`) ignore type hints  
+**V16**: Invalid type hint values are rejected before compilation  
+
+### 7.4 Range Validation
+
+**V17**: For `<xrange>`, `from` cell must be ≤ `to` cell (both row and column)  
+**V18**: Invalid cell addresses in `from` or `to` are rejected  
+**V19**: Range addresses must follow A1 notation strictly  
 
 ### 7.4 XML Well-Formedness
 
