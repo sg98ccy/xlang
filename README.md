@@ -1,6 +1,6 @@
 # EXLang v1 — A Concise Domain Language for Excel Generation  
 Version: 1.0 (Preview)  
-Last Updated: 2025-11-17  
+Last Updated: 2025-11-18  
 
 ---
 
@@ -137,7 +137,27 @@ The specification includes:
 
 ## 5. Supported Tags in Version 1
 
-EXLang v1 intentionally focuses on a small, coherent subset of tags that already cover many realistic spreadsheets. For the complete grammar, see [`docs/GRAMMAR.md`](docs/GRAMMAR.md).
+EXLang v1 supports **9 essential tags** covering data placement, pattern generation, and formatting. This minimal set enables real-world Excel generation while maintaining token efficiency.
+
+### Tag Overview
+
+| Tag | Purpose | Key Attributes |
+|-----|---------|----------------|
+| `<xworkbook>` | Root container | — |
+| `<xsheet>` | Worksheet definition | `name` (optional) |
+| `<xrow>` | Row-based placement | `r` (row), `c` (column, default "A") |
+| `<xv>` | Cell value | — |
+| `<xcell>` | Direct cell assignment | `addr`, `v`, `t` (optional) |
+| `<xrange>` | Fill rectangular range | `from`, `to`, `fill`, `t` (optional) |
+| `<xrepeat>` | Pattern generation | `times`, `r`, `c`, `direction` |
+| `<xmerge>` | Merge cells | `addr` (range) |
+| `<xstyle>` | Font formatting | `addr`, `bold`, `italic`, `underline` |
+
+**Processing order:** xrow → xrange → xrepeat → xcell → xmerge → xstyle (last write wins)
+
+For complete grammar and semantics, see [`docs/GRAMMAR.md`](docs/GRAMMAR.md).
+
+---
 
 ### 5.1 `<xworkbook>`
 
