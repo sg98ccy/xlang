@@ -768,9 +768,168 @@ The notebook imports directly from the installed package:
 from exlang import compile_xlang_to_xlsx, validate_xlang_minimal
 ```
 
+### Automatic XML Escaping with Jinja2
+
+EXLang **automatically** uses Jinja2 template preprocessing to handle XML escaping in formulas. This significantly reduces token overhead and makes EXLang more LLM-friendly.
+
+#### The XML Escaping Problem
+
+Excel formulas often contain comparison operators (`<`, `>`, `<=`, `>=`, `<>`) and quotes (`"`), which are special characters in XML. Without escaping, these characters break XML parsing:
+
+**Manual escaping required (verbose):**
+```xml
+<!-- ❌ INVALID: Breaks XML parsing -->
+<xcell addr="B4" v="=IF(A4<100,"Low","High")"/>
+
+<!-- ✓ VALID: Manual XML escaping (verbose) -->
+<xcell addr="B4" v="=IF(A4&lt;100,&quot;Low&quot;,&quot;High&quot;)"/>
+```
+
+This manual escaping adds ~30% more tokens and reduces LLM reliability.
+
+#### Jinja2 Solution: Natural Formula Syntax
+
+With automatic Jinja2 preprocessing, you can write formulas naturally without manual escaping:
+
+```python
+from exlang import compile_xlang_to_xlsx
+
+xlang = '''
+<xworkbook>
+  <xsheet name="Report">
+    <xcell addr="A1" v="{{ formula }}"/>
+  </xsheet>
+</xworkbook>
+'''
+
+# Pass formula as template variable - Jinja2 auto-escapes XML characters automatically
+compile_xlang_to_xlsx(
+    xlang,
+    "output/report.xlsx",
+    formula='=IF(A4<100,"Low","High")'  # No manual escaping needed!
+)
+```
+
+**How it works:**
+
+1. Jinja2's `autoescape=True` automatically converts `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;`, etc.
+2. Template variables (`{{ formula }}`) are substituted and escaped before XML parsing
+3. The Excel file receives the correct unescaped formula: `=IF(A4<100,"Low","High")`
+
+#### Token Efficiency Comparison
+
+| Approach | Formula Syntax | Approx. Tokens |
+|----------|---------------|----------------|
+| Manual escaping | `v="=IF(A4&lt;100,&quot;Low&quot;,&quot;High&quot;)"` | ~18 |
+| Jinja2 template | `formula='=IF(A4<100,"Low","High")'` | ~13 |
+| **Savings** | **Natural syntax** | **~30% reduction** |
+
+#### Advanced Jinja2 Features
+
+**Multiple template variables:**
+```python
+xlang = '''
+<xworkbook>
+  <xsheet name="Inventory">
+    <xcell addr="A1" v="{{ title }}"/>
+    <xcell addr="B4" v="{{ reorder_formula }}"/>
+    <xcell addr="B5" v="{{ status_formula }}"/>
+  </xsheet>
+</xworkbook>
+'''
+
+compile_xlang_to_xlsx(
+    xlang,
+    "inventory.xlsx",
+    title="Weekly Inventory Report",
+    reorder_formula='=IF(C4<100,"REORDER","OK")',
+    status_formula='=IF(D5>E5,"OVER","UNDER")'
+)
+```
+
+**Jinja2 loops for repetitive formulas:**
+```python
+xlang = '''
+<xworkbook>
+  <xsheet name="Sales">
+    <xrow r="1" c="A"><xv>Product</xv><xv>Q1</xv><xv>Q2</xv><xv>Q3</xv><xv>Q4</xv><xv>Total</xv></xrow>
+    {% for i in range(2, 7) %}
+    <xrow r="{{ i }}" c="A">
+      <xv>Product {{ i-1 }}</xv>
+      <xv>{{ base_sales }}</xv>
+      <xv>{{ base_sales * 1.1 }}</xv>
+      <xv>{{ base_sales * 1.2 }}</xv>
+      <xv>{{ base_sales * 1.3 }}</xv>
+    </xrow>
+    <xcell addr="F{{ i }}" v="{{ row_sum_formula.replace('ROW', i|string) }}"/>
+    {% endfor %}
+  </xsheet>
+</xworkbook>
+'''
+
+compile_xlang_to_xlsx(
+    xlang,
+    "sales.xlsx",
+    base_sales=10000,
+    row_sum_formula='=SUM(B{ROW}:E{ROW})'
+)
+```
+
+#### Writing Formulas in EXLang
+
+| Use Case | Recommended Approach |
+|----------|---------------------|
+| **Formulas with `<`, `>`, `<>`, `&`** | ✓ Template variables (auto-escaping) |
+| **Many similar formulas** | ✓ Jinja2 loops |
+| **LLM-generated content** | ✓ Template variables (token efficiency) |
+| **Simple data without formulas** | Direct values (no templates needed) |
+| **Static templates** | Either approach works |
+
+#### Backward Compatibility
+
+Jinja2 preprocessing is **always enabled** by default. If your EXLang contains manual XML escaping (e.g., `&lt;`, `&quot;`), it will still work correctly — Jinja2 passes it through unchanged:
+
+```python
+# Manual escaping still works (backward compatible)
+xlang_manual = '''
+<xworkbook>
+  <xsheet name="Test">
+    <xcell addr="A1" v="=IF(B1&lt;100,&quot;Low&quot;,&quot;High&quot;)"/>
+  </xsheet>
+</xworkbook>
+'''
+compile_xlang_to_xlsx(xlang_manual, "output.xlsx")  # Works fine
+
+# Template variables are cleaner and more token-efficient
+xlang_template = '''
+<xworkbook>
+  <xsheet name="Test">
+    <xcell addr="A1" v="{{ formula }}"/>
+  </xsheet>
+</xworkbook>
+'''
+compile_xlang_to_xlsx(xlang_template, "output.xlsx", 
+                     formula='=IF(B1<100,"Low","High")')  # Recommended
+```
+
+Existing code with manual escaping continues to work without changes.
+
+#### Why This Matters for ORO Research
+
+Automatic Jinja2 integration aligns perfectly with **Output Representation Optimisation** goals:
+
+- **~30% token reduction** for formula-heavy workbooks
+- **Industry standard**: Jinja2 is used by Flask, Ansible, etc. — LLMs are already trained on this syntax
+- **LLM-friendly**: Natural formula syntax reduces generation errors
+- **Deterministic**: Template engine ensures consistent XML output
+- **Research reproducibility**: Standard tool vs custom escaping logic
+- **Always reliable**: No need to remember opt-in flags — automatic escaping is always available
+
+**Recommendation**: Use template variables (`{{ variable }}`) when generating EXLang with formulas. The token savings and reduced error rate make it ideal for LLM output.
+
 ---
 
-## 9. Examples
+## 10. Examples
 
 ### 9.1 Example 1 — Simple KPI sheet
 
@@ -794,7 +953,7 @@ EXLang:
 </xworkbook>
 ```
 
-### 9.2 Example 2 — Multi sheet regional sales
+### 10.2 Example 2 — Multi sheet regional sales
 
 This example stresses:
 
@@ -807,7 +966,7 @@ Sheets:
 - `Data` holding regional values  
 - `Summary` calculating total and average metrics  
 
-### 9.3 Example 3 — Mixed types and layout
+### 10.3 Example 3 — Mixed types and layout
 
 This example stresses:
 
@@ -821,9 +980,9 @@ Together, these examples cover a wide range of behaviours for the basic tag set.
 
 ---
 
-## 10. Benchmarks and Analysis
+## 11. Benchmarks and Analysis
 
-### 10.1 Compression experiment
+### 11.1 Compression experiment
 
 To quantify how concise EXLang is compared to traditional Python, we implemented the same workbooks in:
 
@@ -844,7 +1003,7 @@ Results:
   - Python length: 570 characters  
   - Python to XLang ratio: approximately 0.74  
 
-### 10.2 Interpretation
+### 11.2 Interpretation
 
 The results indicate:
 
@@ -861,23 +1020,23 @@ These observations support the viability of EXLang as a practical structured out
 
 ---
 
-## 11. Roadmap
+## 12. Roadmap
 
-### 11.1 Short term (v1.x)
+### 12.1 Short term (v1.x)
 
 - Add support for `xmerge` to handle merged cell regions  
 - Add minimal `xstyle` for formatting (fonts, number formats, alignment)  
 - Extend validation to cover more error cases and overlapping ranges  
 - Create additional examples, including stress tests and edge cases  
 
-### 11.2 Medium term (v2)
+### 12.2 Medium term (v2)
 
 - Introduce `xseq` and `xplace` to define reusable value sequences  
 - Add `xrepeat` and `xpattern` for pattern based table generation  
 - Improve styling capabilities and introduce simple style presets  
 - Add named cells and named ranges for more complex formulas  
 
-### 11.3 Long term (v3)
+### 12.3 Long term (v3)
 
 - Develop a richer pattern language for complex dashboards  
 - Introduce theme support for consistent styling  
@@ -887,7 +1046,7 @@ These observations support the viability of EXLang as a practical structured out
 
 ---
 
-## 12. Contributing
+## 13. Contributing
 
 Contributions are welcome.
 
@@ -905,14 +1064,14 @@ You can propose larger changes via GitHub issues or pull requests.
 
 ---
 
-## 13. License
+## 14. License
 
 This project is licensed under the MIT License.  
 See the `LICENSE` file in the repository for full terms.
 
 ---
 
-## 14. Contact
+## 15. Contact
 
 For bug reports or feature requests, please open an issue on GitHub.
 

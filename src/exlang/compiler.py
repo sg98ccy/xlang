@@ -4,6 +4,7 @@
 
 from pathlib import Path
 from xml.etree import ElementTree as ET
+from jinja2 import Environment
 
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -13,9 +14,34 @@ from .validator import validate_xlang_minimal
 from .helpers import col_letter_to_index, infer_value, parse_range, parse_merge_range, substitute_template_vars
 
 
-def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path) -> None:
+def preprocess_jinja_xlang(xlang_text: str) -> str:
+    """
+    Preprocess EXLang templates using Jinja2 with XML autoescape.
+    
+    This allows natural formula syntax:
+        <xcell addr="A1" v="{{ formula }}"/>
+    
+    Where formula = '=IF(B1<100,"Low","High")' gets auto-escaped to:
+        <xcell addr="A1" v="=IF(B1&lt;100,&quot;Low&quot;,&quot;High&quot;)"/>
+    
+    Uses Jinja2's industry-standard XML escaping mechanism.
+    """
+    # Create Jinja2 environment with XML autoescape enabled
+    env = Environment(autoescape=True)
+    
+    # Render the template (this handles XML escaping automatically)
+    template = env.from_string(xlang_text)
+    
+    # Render with empty context (no variables to substitute unless provided)
+    return template.render()
+
+
+def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path, **template_vars) -> None:
     """
     Compile a minimal subset of exlang into an Excel .xlsx file.
+    
+    Jinja2 preprocessing is ALWAYS enabled for automatic XML escaping and template support.
+    This allows natural formula syntax without manual escaping.
 
     Supported tags:
       - xworkbook
@@ -27,7 +53,39 @@ def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path) -> None:
       - xrange
       - xmerge
       - xstyle
+    
+    Args:
+        xlang_text: EXLang XML string (with optional Jinja2 templates)
+        output_path: Path to output .xlsx file
+        **template_vars: Variables to pass to Jinja2 template rendering
+    
+    Example with template variables:
+        xlang = '''
+        <xworkbook>
+          <xsheet name="Test">
+            <xcell addr="A1" v="{{ formula }}"/>
+          </xsheet>
+        </xworkbook>
+        '''
+        compile_xlang_to_xlsx(xlang, "output.xlsx", 
+                             formula='=IF(B1<100,"Low","High")')
+    
+    Example without template variables (still gets Jinja2 preprocessing):
+        xlang = '''
+        <xworkbook>
+          <xsheet name="KPI">
+            <xrow r="1"><xv>Region</xv><xv>Sales</xv></xrow>
+          </xsheet>
+        </xworkbook>
+        '''
+        compile_xlang_to_xlsx(xlang, "output.xlsx")
     """
+    # ALWAYS preprocess with Jinja2 for automatic XML escaping
+    if template_vars:
+        xlang_text = Environment(autoescape=True).from_string(xlang_text).render(**template_vars)
+    else:
+        xlang_text = preprocess_jinja_xlang(xlang_text)
+    
     root = ET.fromstring(xlang_text)
 
     errors = validate_xlang_minimal(root)
