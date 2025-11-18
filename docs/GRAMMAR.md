@@ -238,7 +238,44 @@ DirectionValue ::= 'down' | 'right'
 (* Can only contain <xv> elements *)
 ```
 
-### 4.7 Terminal Definitions
+### 4.7 Cell Merging
+
+```ebnf
+(* ============================================================ *)
+(* Cell merge operations for table headers and titles           *)
+(* ============================================================ *)
+
+Merge         ::= '<xmerge' MergeAddr '/>'
+
+MergeAddr     ::= 'addr="' MergeRange '"'
+MergeRange    ::= CellAddress ':' CellAddress
+
+(* Merges cells in specified range *)
+(* Range format: A1:B1, A1:D5, etc. *)
+(* Merged cells display value from top-left cell *)
+```
+
+### 4.8 Cell Styling
+
+```ebnf
+(* ============================================================ *)
+(* Minimal formatting for real-world Excel usage                *)
+(* ============================================================ *)
+
+Style         ::= '<xstyle' StyleAddr [ BoldAttr ] [ ItalicAttr ] [ UnderlineAttr ] '/>'
+
+StyleAddr     ::= 'addr="' ( CellAddress | MergeRange ) '"'
+BoldAttr      ::= 'bold="' BoolValue '"'
+ItalicAttr    ::= 'italic="' BoolValue '"'
+UnderlineAttr ::= 'underline="' BoolValue '"'
+BoolValue     ::= 'true' | 'false'
+
+(* Applies font styling to single cell or range *)
+(* Range notation supported: A1:B10 *)
+(* Boolean attributes are optional *)
+```
+
+### 4.9 Terminal Definitions
 
 ```ebnf
 (* ============================================================ *)
@@ -521,15 +558,57 @@ EXLang performs **no implicit type coercion** during compilation. Type inference
 
 **Rule 6.7.5**: `<xcell>` can overwrite all previous placements.
 
-### 6.8 Formula Semantics
+### 6.8 Merge Semantics
 
-**Rule 6.8.1**: Values starting with `=` are treated as Excel formulas.
+**Rule 6.8.1**: `<xmerge>` combines multiple cells into single merged cell.
 
-**Rule 6.8.2**: Formulas are **stored**, not evaluated during compilation.
+**Rule 6.8.2**: Merged cells display only the value from the top-left cell of the range.
 
-**Rule 6.7.3**: Formula syntax must be valid Excel formula notation.
+**Rule 6.8.3**: Merge range must use format `A1:B1` (start_cell:end_cell).
 
-**Rule 6.7.4**: Cross-sheet references use `SheetName!CellAddress` syntax:
+**Rule 6.8.4**: Multiple non-overlapping merges in same sheet are allowed.
+
+**Example:**
+```xml
+<xcell addr="A1" v="Merged Title"/>
+<xmerge addr="A1:D1"/>
+<!-- Displays "Merged Title" across cells A1, B1, C1, D1 -->
+```
+
+### 6.9 Style Semantics
+
+**Rule 6.9.1**: `<xstyle>` applies font formatting to single cell or range.
+
+**Rule 6.9.2**: Supported attributes: `bold`, `italic`, `underline` (all boolean).
+
+**Rule 6.9.3**: Boolean values must be `"true"` or `"false"` (strings).
+
+**Rule 6.9.4**: Range notation `A1:B10` applies styling to all cells in range.
+
+**Rule 6.9.5**: Multiple xstyle tags on same cell: last write wins.
+
+**Example (single cell):**
+```xml
+<xcell addr="A1" v="Header"/>
+<xstyle addr="A1" bold="true" italic="true"/>
+```
+
+**Example (range):**
+```xml
+<xrow r="1" c="A"><xv>Col1</xv><xv>Col2</xv><xv>Col3</xv></xrow>
+<xstyle addr="A1:C1" bold="true"/>
+<!-- Applies bold to all three cells -->
+```
+
+### 6.10 Formula Semantics
+
+**Rule 6.10.1**: Values starting with `=` are treated as Excel formulas.
+
+**Rule 6.10.2**: Formulas are **stored**, not evaluated during compilation.
+
+**Rule 6.10.3**: Formula syntax must be valid Excel formula notation.
+
+**Rule 6.10.4**: Cross-sheet references use `SheetName!CellAddress` syntax:
 ```xml
 <xcell addr="A1" v="=Data!B2+Summary!C5"/>
 ```
@@ -577,12 +656,24 @@ EXLang performs **no implicit type coercion** during compilation. Type inference
 **V23**: `<xrepeat>` can only contain `<xv>` elements  
 **V24**: Nested `<xrepeat>` elements are not allowed  
 
-### 7.6 XML Well-Formedness
+### 7.6 Merge Validation
 
-**V25**: Document must be valid XML 1.0  
-**V26**: All elements must be properly nested  
-**V27**: All tags must be closed  
-**V28**: Attribute values must be quoted  
+**V25**: `<xmerge>` must have `addr` attribute  
+**V26**: `addr` must be a range (contain `:`) in format `A1:B1`  
+**V27**: Merge range must have exactly one colon separator  
+
+### 7.7 Style Validation
+
+**V28**: `<xstyle>` must have `addr` attribute  
+**V29**: Boolean attributes (`bold`, `italic`, `underline`) must be `"true"` or `"false"`  
+**V30**: Invalid boolean values (e.g., `"yes"`, `"1"`) are rejected  
+
+### 7.8 XML Well-Formedness
+
+**V31**: Document must be valid XML 1.0  
+**V32**: All elements must be properly nested  
+**V33**: All tags must be closed  
+**V34**: Attribute values must be quoted  
 
 ---
 

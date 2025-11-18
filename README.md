@@ -353,6 +353,121 @@ Equivalent using `<xrepeat>` (single element):
 
 This achieves approximately **12× token reduction** for templated table structures, demonstrating Output Representation Optimisation (ORO) for pattern-based data. The compression factor scales linearly with the repetition count: `times="100"` achieves 100× compression.
 
+### 5.8 `<xmerge addr="...">`
+
+Merge multiple cells into a single merged cell for headers and titles.  
+Attributes:
+
+- `addr`: Merge range in A1 notation (required, format: `"A1:B1"`)  
+
+**Behaviour:**
+
+- Combines cells in specified range into single merged cell  
+- Displays only the value from the top-left cell  
+- Range must use colon notation: `start_cell:end_cell`  
+- Multiple non-overlapping merges allowed in same sheet  
+
+**Example (horizontal merge):**
+
+```xml
+<xcell addr="A1" v="2024 Budget Report"/>
+<xmerge addr="A1:D1"/>
+```
+
+This merges cells A1, B1, C1, and D1, displaying "2024 Budget Report" across the merged area.
+
+**Example (vertical merge):**
+
+```xml
+<xcell addr="A1" v="Category"/>
+<xmerge addr="A1:A3"/>
+```
+
+**Example (rectangular merge):**
+
+```xml
+<xcell addr="A1" v="Title Block"/>
+<xmerge addr="A1:C2"/>
+```
+
+**Real-world use case:**
+
+```xml
+<xsheet name="Report">
+  <xcell addr="A1" v="Q4 Financial Summary"/>
+  <xmerge addr="A1:E1"/>
+  <xrow r="2" c="A"><xv>Month</xv><xv>Revenue</xv><xv>Costs</xv><xv>Profit</xv><xv>Margin</xv></xrow>
+</xsheet>
+```
+
+### 5.9 `<xstyle addr="..." bold="..." italic="..." underline="...">`
+
+Apply font formatting to single cells or ranges.  
+Attributes:
+
+- `addr`: Cell address or range in A1 notation (required)  
+- `bold`: Apply bold formatting (optional, `"true"` or `"false"`)  
+- `italic`: Apply italic formatting (optional, `"true"` or `"false"`)  
+- `underline`: Apply underline formatting (optional, `"true"` or `"false"`)  
+
+**Behaviour:**
+
+- Applies to single cell (e.g., `"A1"`) or range (e.g., `"A1:C1"`)  
+- Range notation applies styling to all cells in range  
+- Multiple xstyle tags on same cell: last write wins  
+- Boolean values must be strings: `"true"` or `"false"`  
+
+**Example (single cell, bold):**
+
+```xml
+<xcell addr="A1" v="Header"/>
+<xstyle addr="A1" bold="true"/>
+```
+
+**Example (range, multiple attributes):**
+
+```xml
+<xrow r="1" c="A"><xv>Column 1</xv><xv>Column 2</xv><xv>Column 3</xv></xrow>
+<xstyle addr="A1:C1" bold="true" italic="true"/>
+```
+
+This applies bold and italic to all three header cells.
+
+**Example (combining merge and style):**
+
+```xml
+<xcell addr="A1" v="Report Title"/>
+<xmerge addr="A1:D1"/>
+<xstyle addr="A1" bold="true" underline="true"/>
+```
+
+**Real-world table example:**
+
+```xml
+<xsheet name="Budget">
+  <!-- Title row: merged and styled -->
+  <xcell addr="A1" v="2024 Monthly Budget"/>
+  <xmerge addr="A1:D1"/>
+  <xstyle addr="A1" bold="true"/>
+  
+  <!-- Header row: styled -->
+  <xrow r="2" c="A"><xv>Month</xv><xv>Income</xv><xv>Expenses</xv><xv>Savings</xv></xrow>
+  <xstyle addr="A2:D2" bold="true" italic="true"/>
+  
+  <!-- Data rows using xrepeat -->
+  <xrepeat times="12" r="3" c="A">
+    <xv>Month {{i}}</xv>
+    <xv>0</xv>
+    <xv>0</xv>
+    <xv>=B{{i+2}}-C{{i+2}}</xv>
+  </xrepeat>
+</xsheet>
+```
+
+**Why xmerge and xstyle matter:**
+
+Real-world Excel documents always include basic formatting. Without merge and style capabilities, EXLang would be limited to raw data entry, making it impractical for actual use. These tags complete the language for production scenarios while maintaining the minimalist design philosophy.
+
 ---
 
 ## 6. Installation

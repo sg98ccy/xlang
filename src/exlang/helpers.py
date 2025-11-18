@@ -140,6 +140,53 @@ def parse_range(from_addr: str, to_addr: str) -> tuple[int, int, int, int]:
     return (from_row, from_col, to_row, to_col)
 
 
+def parse_merge_range(addr: str) -> tuple[int, int, int, int]:
+    """
+    Parse a merge range address (e.g., 'A1:B1') into (start_row, start_col, end_row, end_col).
+    
+    Args:
+        addr: Merge range in A1 notation (e.g., 'A1:B1', 'A1:D5')
+    
+    Returns:
+        Tuple of (start_row, start_col, end_row, end_col) - all 1-based
+    
+    Raises:
+        ValueError: If addr format is invalid
+    
+    Examples:
+        >>> parse_merge_range('A1:B1')
+        (1, 1, 1, 2)
+        >>> parse_merge_range('A1:C3')
+        (1, 1, 3, 3)
+    """
+    if ":" not in addr:
+        raise ValueError(f"Merge range must contain ':', got: {addr}")
+    
+    parts = addr.split(":")
+    if len(parts) != 2:
+        raise ValueError(f"Merge range must have format 'A1:B1', got: {addr}")
+    
+    start_addr, end_addr = parts
+    
+    # Parse start cell
+    match_start = re.match(r"([A-Z]+)([1-9][0-9]*)", start_addr)
+    if not match_start:
+        raise ValueError(f"Invalid start cell address: {start_addr}")
+    start_col_letter, start_row_str = match_start.groups()
+    start_row = int(start_row_str)
+    start_col = col_letter_to_index(start_col_letter)
+    
+    # Parse end cell
+    match_end = re.match(r"([A-Z]+)([1-9][0-9]*)", end_addr)
+    if not match_end:
+        raise ValueError(f"Invalid end cell address: {end_addr}")
+    end_col_letter, end_row_str = match_end.groups()
+    end_row = int(end_row_str)
+    end_col = col_letter_to_index(end_col_letter)
+    
+    return (start_row, start_col, end_row, end_col)
+
+
 def substitute_template_vars(text: str, iteration_index: int) -> str:
     """
     Substitute template variables in text with actual values.

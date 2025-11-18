@@ -6,9 +6,11 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from openpyxl import Workbook
+from openpyxl.styles import Font
+from openpyxl.utils import range_boundaries
 
 from .validator import validate_xlang_minimal
-from .helpers import col_letter_to_index, infer_value, parse_range, substitute_template_vars
+from .helpers import col_letter_to_index, infer_value, parse_range, parse_merge_range, substitute_template_vars
 
 
 def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path) -> None:
@@ -23,6 +25,8 @@ def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path) -> None:
       - xrepeat
       - xcell
       - xrange
+      - xmerge
+      - xstyle
     """
     root = ET.fromstring(xlang_text)
 
@@ -109,6 +113,45 @@ def compile_xlang_to_xlsx(xlang_text: str, output_path: str | Path) -> None:
             type_hint = xcell.attrib.get("t")
             value = infer_value(raw_value, type_hint)
             ws[addr] = value
+
+        # Process xmerge (merge cells)
+        for xmerge in xsheet.findall("xmerge"):
+            addr = xmerge.attrib["addr"]
+            # Parse merge range (e.g., "A1:B1")
+            start_row, start_col, end_row, end_col = parse_merge_range(addr)
+            ws.merge_cells(
+                start_row=start_row,
+                start_column=start_col,
+                end_row=end_row,
+                end_column=end_col
+            )
+
+        # Process xstyle (apply formatting)
+        for xstyle in xsheet.findall("xstyle"):
+            addr = xstyle.attrib["addr"]
+            
+            # Check if addr is a range or single cell
+            if ":" in addr:
+                # Range notation (e.g., "A1:B10")
+                start_row, start_col, end_row, end_col = parse_merge_range(addr)
+                cells_to_style = []
+                for row in range(start_row, end_row + 1):
+                    for col in range(start_col, end_col + 1):
+                        cells_to_style.append(ws.cell(row=row, column=col))
+            else:
+                # Single cell
+                cells_to_style = [ws[addr]]
+            
+            # Build Font object from attributes
+            bold = xstyle.attrib.get("bold") == "true"
+            italic = xstyle.attrib.get("italic") == "true"
+            underline_val = "single" if xstyle.attrib.get("underline") == "true" else None
+            
+            font = Font(bold=bold, italic=italic, underline=underline_val)
+            
+            # Apply font to all cells
+            for cell in cells_to_style:
+                cell.font = font
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

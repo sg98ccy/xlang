@@ -6,6 +6,7 @@ from xml.etree import ElementTree as ET
 
 ALLOWED_TYPES = {"number", "string", "date", "bool"}
 ALLOWED_DIRECTIONS = {"down", "right"}
+ALLOWED_BOOL_VALUES = {"true", "false"}
 
 
 def validate_xlang_minimal(root: ET.Element) -> list[str]:
@@ -113,5 +114,31 @@ def validate_xlang_minimal(root: ET.Element) -> list[str]:
                     f"xrange from {xrange.attrib.get('from', '?')} to {xrange.attrib.get('to', '?')} "
                     f"has invalid type hint t='{t}'"
                 )
+
+        for xmerge in sheet.findall("xmerge"):
+            if "addr" not in xmerge.attrib:
+                errors.append("xmerge missing required attribute 'addr'")
+            else:
+                addr = xmerge.attrib["addr"]
+                # Validate merge range format (A1:B1)
+                if ":" not in addr:
+                    errors.append(f"xmerge addr '{addr}' must be a range (e.g., 'A1:B1')")
+                else:
+                    parts = addr.split(":")
+                    if len(parts) != 2:
+                        errors.append(f"xmerge addr '{addr}' must have exactly one colon (e.g., 'A1:B1')")
+
+        for xstyle in sheet.findall("xstyle"):
+            if "addr" not in xstyle.attrib:
+                errors.append("xstyle missing required attribute 'addr'")
+            
+            # Validate boolean style attributes
+            for attr in ["bold", "italic", "underline"]:
+                value = xstyle.attrib.get(attr)
+                if value is not None and value not in ALLOWED_BOOL_VALUES:
+                    errors.append(
+                        f"xstyle at {xstyle.attrib.get('addr', '?')} has invalid {attr}='{value}'. "
+                        f"Must be 'true' or 'false'"
+                    )
 
     return errors
