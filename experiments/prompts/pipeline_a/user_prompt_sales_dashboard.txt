@@ -1,0 +1,34 @@
+Create an Excel workbook that matches this Sales Dashboard specification.
+
+Sheet "Data":
+Columns: Date, Region, Product, Units, UnitPrice, Revenue, Cost, Profit, Channel.
+Rows 2–13 must contain:
+
+Row 2:  2024-01-15, North, Alpha, 120, 25.0, Revenue = D2*E2,  Cost = F2*0.6, Profit = F2-G2, Online
+Row 3:  2024-01-28, South, Beta,  80,  30.0, Revenue = D3*E3,  Cost = F3*0.6, Profit = F3-G3, Retail
+Row 4:  2024-02-10, East,  Alpha, 150, 22.5, Revenue = D4*E4,  Cost = F4*0.6, Profit = F4-G4, Online
+Row 5:  2024-02-22, West,  Beta,  95,  28.0, Revenue = D5*E5,  Cost = F5*0.6, Profit = F5-G5, Retail
+Row 6:  2024-03-05, North, Alpha, 130, 26.0, Revenue = D6*E6,  Cost = F6*0.6, Profit = F6-G6, Retail
+Row 7:  2024-03-18, South, Beta,  110, 29.5, Revenue = D7*E7,  Cost = F7*0.6, Profit = F7-G7, Online
+Row 8:  2024-04-02, East,  Alpha, 140, 24.0, Revenue = D8*E8,  Cost = F8*0.6, Profit = F8-G8, Online
+Row 9:  2024-04-20, West,  Beta,  100, 27.0, Revenue = D9*E9,  Cost = F9*0.6, Profit = F9-G9, Retail
+Row 10: 2024-05-09, North, Beta,  90,  31.0, Revenue = D10*E10, Cost = F10*0.6, Profit = F10-G10, Online
+Row 11: 2024-05-21, South, Alpha, 160, 23.5, Revenue = D11*E11, Cost = F11*0.6, Profit = F11-G11, Retail
+Row 12: 2024-06-07, East,  Beta,  105, 29.0, Revenue = D12*E12, Cost = F12*0.6, Profit = F12-G12, Online
+Row 13: 2024-06-19, West,  Alpha, 115, 25.5, Revenue = D13*E13, Cost = F13*0.6, Profit = F13-G13, Retail
+
+Sheet "Summary":
+Row 1: Metric, Value
+Row 2: Total Revenue, =SUM(Data!F2:F13)
+Row 3: Total Profit, =SUM(Data!H2:H13)
+Row 4: Average Margin, =B3/B2
+
+Region summary starting at row 6:
+Row 6: Region, Revenue, Profit
+Row 7: North, =SUMIF(Data!B:B,"North",Data!F:F), =SUMIF(Data!B:B,"North",Data!H:H)
+Row 8: South, =SUMIF(Data!B:B,"South",Data!F:F), =SUMIF(Data!B:B,"South",Data!H:H)
+Row 9: East,  =SUMIF(Data!B:B,"East", Data!F:F), =SUMIF(Data!B:B,"East", Data!H:H)
+Row 10:West,  =SUMIF(Data!B:B,"West", Data!F:F), =SUMIF(Data!B:B,"West", Data!H:H)
+
+Use the Code Interpreter tool to write and execute Python that builds this workbook.
+Clearly state the file path inside the sandbox at the end.
